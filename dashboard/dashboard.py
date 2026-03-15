@@ -1,172 +1,187 @@
 import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
-import seaborn as sns
 import streamlit as st
-from babel.numbers import format_currency
 
-sns.set(style='dark')
 
-customer_orders = pd.read_csv("./customer_orders_cleaned.csv")
-customer_review = pd.read_csv("./customer_review_cleaned.csv")
-payment_method = pd.read_csv("./payment_method_cleaned.csv")
-product_catalog = pd.read_csv("./product_catalog_cleaned.csv")
-product_orders = pd.read_csv("./product_orders_cleaned.csv")
+# LOAD DATA
 
-customer_orders["order_date"] = pd.to_datetime(customer_orders["order_date"])
-customer_orders["delivery_date"] = pd.to_datetime(customer_orders["delivery_date"])
+customer_orders = pd.read_csv("./dashboard/customer_orders_cleaned.csv")
+customer_reviews = pd.read_csv("./dashboard/customer_review_cleaned.csv")
+payment_method = pd.read_csv("./dashboard/payment_method_cleaned.csv")
+product_catalog = pd.read_csv("./dashboard/product_catalog_cleaned.csv")
+product_order = pd.read_csv("./dashboard/product_orders_cleaned.csv")
 
-min_date = customer_orders["order_date"].min()
-max_date = customer_orders["order_date"].max()
+# convert datetime
+customer_orders["order_purchase_timestamp"] = pd.to_datetime(
+    customer_orders["order_purchase_timestamp"]
+)
 
-with st.sidebar:
+# MERGE DATA FOR ANALYSIS
 
-    st.image("https://github.com/dicodingacademy/assets/raw/main/logo.png")
+product_identification = product_order.merge(
+    product_catalog,
+    on="product_id",
+    how="left"
+)
 
-    start_date, end_date = st.date_input(
-        label="Rentang Waktu",
-        min_value=min_date,
-        max_value=max_date,
-        value=[min_date, max_date]
+# STREAMLIT TITLE
+
+st.title("E-Commerce Data Analysis Dashboard")
+
+# 1 TOP 10 PRODUCT REVENUE
+
+st.subheader("Top 10 Products Contributing to Revenue")
+
+product = (
+'beleza_saude','relogios_presentes','cama_mesa_banho','esporte_lazer',
+'informatica_acessorios','moveis_decoracao','cool_stuff',
+'utilidades_domesticas','automotivo','ferramentas_jardim'
+)
+
+revenue = (
+1258681.34,1205005.68,1036988.68,988048.97,911954.32,
+729762.49,635290.85,632248.66,592720.11,485256.46
+)
+
+fig, ax = plt.subplots(figsize=(10,6))
+
+bars = ax.bar(product, revenue)
+
+plt.ticklabel_format(style='plain', axis='y')
+
+plt.xticks(rotation=45)
+
+for bar, value in zip(bars, revenue):
+    ax.text(
+        bar.get_x()+bar.get_width()/2,
+        bar.get_height(),
+        f'{value/1e6:.2f}M',
+        ha='center',
+        va='bottom',
+        fontsize=9
     )
 
-filtered_orders = customer_orders[
-    (customer_orders["order_date"] >= pd.to_datetime(start_date)) &
-    (customer_orders["order_date"] <= pd.to_datetime(end_date))
+ax.set_title("Top 10 Products Contributes to Company's Revenue")
+ax.set_xlabel("Product Category")
+ax.set_ylabel("Revenue")
+
+st.pyplot(fig)
+
+# 2 CUSTOMER REVIEW DISTRIBUTION
+
+st.subheader("Customer Review Rating Distribution")
+
+ratings = customer_reviews["review_score"].value_counts().sort_index()
+
+colors = ['red','orange','gray','lightgreen','green']
+
+labels = ['1 Star','2 Stars','3 Stars','4 Stars','5 Stars']
+
+fig2, ax2 = plt.subplots(figsize=(7,7))
+
+wedges, texts, autotexts = ax2.pie(
+    ratings,
+    autopct='%1.1f%%',
+    startangle=90,
+    colors=colors
+)
+
+ax2.set_title("Customer Review Rating Distribution")
+
+ax2.legend(
+    wedges,
+    labels,
+    title="Ratings",
+    loc="center left",
+    bbox_to_anchor=(1,0.5)
+)
+
+st.pyplot(fig2)
+
+# 3 RFM ANALYSIS
+
+st.subheader("Customer Segmentation Based on RFM")
+
+top_products = (
+    product_identification
+    .groupby(["product_id","product_category_name"])
+    .agg(total_revenue=("price","sum"))
+    .reset_index()
+    .sort_values(by="total_revenue", ascending=False)
+    .head(10)
+)
+
+top_product_ids = top_products["product_id"]
+
+top_product_sales = product_identification[
+    product_identification["product_id"].isin(top_product_ids)
 ]
 
-def create_daily_orders_df(df):
-
-    daily_orders = df.resample(rule="D", on="order_date").agg({
-        "order_id": "nunique",
-        "total_price": "sum"
-    }).reset_index()
-
-    daily_orders.rename(columns={
-        "order_id": "order_count",
-        "total_price": "revenue"
-    }, inplace=True)
-
-    return daily_orders
-
-def create_product_sales_df(df):
-
-    product_sales = df.groupby("product_id")["quantity"].sum().reset_index()
-
-    return product_sales
-
-def create_gender_df(df):
-
-    gender_df = df.groupby("gender")["customer_id"].nunique().reset_index()
-
-    gender_df.rename(columns={
-        "customer_id": "customer_count"
-    }, inplace=True)
-
-    return gender_df
-
-def create_rfm_df(df):
-
-    rfm_df = df.groupby("customer_id", as_index=False).agg({
-        "order_date": "max",
-        "order_id": "nunique",
-        "total_price": "sum"
-    })
-
-    rfm_df.columns = ["customer_id", "last_order", "frequency", "monetary"]
-
-    recent_date = df["order_date"].max()
-
-    rfm_df["recency"] = (recent_date - rfm_df["last_order"]).dt.days
-
-    return rfm_df
-
-daily_orders_df = create_daily_orders_df(filtered_orders)
-
-product_sales_df = create_product_sales_df(product_orders)
-
-gender_df = create_gender_df(customer_orders)
-
-rfm_df = create_rfm_df(customer_orders)
-
-st.header("Dicoding Collection Dashboard :sparkles:")
-
-st.subheader("Daily Orders")
-
-col1, col2 = st.columns(2)
-
-with col1:
-    total_orders = daily_orders_df["order_count"].sum()
-    st.metric("Total Orders", total_orders)
-
-with col2:
-    total_revenue = format_currency(
-        daily_orders_df["revenue"].sum(),
-        "AUD",
-        locale="es_CO"
-    )
-    st.metric("Total Revenue", total_revenue)
-
-    fig, ax = plt.subplots(figsize=(16,8))
-
-ax.plot(
-    daily_orders_df["order_date"],
-    daily_orders_df["order_count"],
-    marker="o",
-    color="#90CAF9"
+rfm_data = top_product_sales.merge(
+    customer_orders,
+    on="order_id",
+    how="left"
 )
 
-st.pyplot(fig)
+snapshot_date = rfm_data["order_purchase_timestamp"].max() + pd.Timedelta(days=1)
 
-st.subheader("Product Sales")
+rfm = rfm_data.groupby("customer_id").agg({
 
-fig, ax = plt.subplots(figsize=(12,6))
+    "order_purchase_timestamp": lambda x: (snapshot_date - x.max()).days,
+    "order_id": "nunique",
+    "price": "sum"
 
-top_products = product_sales_df.sort_values(
-    by="quantity",
-    ascending=False
-).head(10)
+})
 
-sns.barplot(
-    x="quantity",
-    y="product_id",
-    data=top_products,
-    color="#90CAF9",
-    ax=ax
+rfm.columns = ["Recency","Frequency","Monetary"]
+
+rfm = rfm.reset_index()
+
+rfm["R_score"] = pd.qcut(rfm["Recency"],4,labels=[4,3,2,1])
+rfm["F_score"] = pd.qcut(rfm["Frequency"].rank(method="first"),4,labels=[1,2,3,4])
+rfm["M_score"] = pd.qcut(rfm["Monetary"],4,labels=[1,2,3,4])
+
+rfm["RFM_score"] = (
+    rfm["R_score"].astype(str)+
+    rfm["F_score"].astype(str)+
+    rfm["M_score"].astype(str)
 )
 
-st.pyplot(fig)
+# CUSTOMER SEGMENT
 
-st.subheader("Customer Demographics")
+def segment_customer(row):
 
-fig, ax = plt.subplots()
+    if row["RFM_score"] == "444":
+        return "Champions"
 
-sns.barplot(
-    x="gender",
-    y="customer_count",
-    data=gender_df,
-    palette=["#90CAF9","#D3D3D3"],
-    ax=ax
+    elif int(row["R_score"]) >= 3 and int(row["F_score"]) >= 3:
+        return "Loyal Customers"
+
+    elif int(row["R_score"]) >= 3:
+        return "Potential Loyalists"
+
+    else:
+        return "At Risk"
+
+rfm["Segment"] = rfm.apply(segment_customer,axis=1)
+
+segment_counts = rfm["Segment"].value_counts()
+
+fig3, ax3 = plt.subplots(figsize=(7,7))
+
+wedges, texts, autotexts = ax3.pie(
+    segment_counts,
+    autopct='%1.1f%%'
 )
 
-st.pyplot(fig)
+ax3.set_title("Customer Segmentation Based on RFM (Top 10 Revenue Products)")
 
-st.subheader("Best Customer Based on RFM")
-
-top_customers = rfm_df.sort_values(
-    by="monetary",
-    ascending=False
-).head(5)
-
-fig, ax = plt.subplots()
-
-sns.barplot(
-    x="customer_id",
-    y="monetary",
-    data=top_customers,
-    color="#90CAF9",
-    ax=ax
+ax3.legend(
+    wedges,
+    segment_counts.index,
+    title="Customer Segment",
+    loc="center left",
+    bbox_to_anchor=(1,0.5)
 )
 
-st.pyplot(fig)
-
+st.pyplot(fig3)
