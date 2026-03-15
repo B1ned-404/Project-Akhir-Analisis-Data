@@ -5,11 +5,11 @@ import streamlit as st
 
 # LOAD DATA
 
-customer_orders = pd.read_csv("./dashboard/customer_orders_cleaned.csv")
-customer_reviews = pd.read_csv("./dashboard/customer_review_cleaned.csv")
-payment_method = pd.read_csv("./dashboard/payment_method_cleaned.csv")
-product_catalog = pd.read_csv("./dashboard/product_catalog_cleaned.csv")
-product_order = pd.read_csv("./dashboard/product_orders_cleaned.csv")
+customer_orders = pd.read_csv("dashboard/customer_orders_cleaned.csv")
+customer_reviews = pd.read_csv("dashboard/customer_review_cleaned.csv")
+payment_method = pd.read_csv("dashboard/payment_method_cleaned.csv")
+product_catalog = pd.read_csv("dashboard/product_catalog_cleaned.csv")
+product_order = pd.read_csv("dashboard/product_orders_cleaned.csv")
 
 # convert datetime
 customer_orders["order_purchase_timestamp"] = pd.to_datetime(
