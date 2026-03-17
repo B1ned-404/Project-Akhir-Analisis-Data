@@ -167,7 +167,7 @@ if not ratings.empty:
         colors=colors
     )
 
-    ax2.set_title(f"Customer Review Rating Distribution (Score >= {min_review_score})")
+    ax2.set_title(f"Customer Review Rating Distribution")
 
     ax2.legend(
         wedges,
@@ -260,8 +260,7 @@ else:
     )
 
     ax3.set_title(
-        f"Customer Segmentation Based on RFM (Top 10 Revenue Products)\n"
-        f"{start_date} to {end_date}"
+        f"Customer Segmentation Based on RFM (Top 10 Revenue Products)"
     )
 
     ax3.legend(
