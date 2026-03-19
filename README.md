@@ -5,8 +5,8 @@
 
 # Project Overview
 Project ini dikerjakan untuk menganalisis data penjualan E - Commerce yang berasal dari Kaggle bertujuan untuk melatih kemampuan analisis data serta business sense saya melalui tahapan - tahapan seperti menjabarkan pertanyaan business, wrangling data, assessing data, cleaning data, EDA, Visualisasi dan akhirnya melakukan analisis lanjutan seperti menggunakan teknik RFM Analysis. Berikut merupakan pertanyaan bisnis yang saya jabarkan dan solusi yang diberikan melalui notebook.ipynb (secara terpisah):
-1. Jenis produk apa yang memberikan kontribusi pendapatan/revenue terbesar kepada perusahaan?
-2. Berapa percentase *retention rate* / tingkat retensi pada customer di dalam ecosystem perusahaan?
+1. Jenis produk apa yang memberikan kontribusi pendapatan/revenue terbesar kepada perusahaan dalam 2 tahun belakangan ini (2016 - 2018)?
+2. Berapa percentase *retention rate* / tingkat retensi pada customer di dalam ecosystem perusahaan dalam rentang waktu 6 bulan kedepan sejak pembelian pertama kali? 
 
 # Project Structure
 PROJECT-AKHIR-ANALISIS-DATA
